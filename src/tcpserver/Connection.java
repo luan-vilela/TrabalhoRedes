@@ -1,4 +1,3 @@
-// https://www.devmedia.com.br/java-socket-transferencia-de-arquivos-pela-rede/32107
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -7,11 +6,14 @@
 package tcpserver;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 
 /**
@@ -34,7 +36,7 @@ class Connection extends Thread {
 	public void run(){
 		try {			                 // an echo server
 
-			String data = in.readUTF();      // primeiro data é a opcão
+			String data = in.readUTF();      // primeiro opcão
                         
                         System.out.println("Cliente  "+ clientSocket.getInetAddress().getHostAddress() + " diz " + data );
                         
@@ -76,9 +78,23 @@ class Connection extends Thread {
                             } 
                         }
                         else if(data.equals("4")){
+                            
                             byte[] arqByte = new byte[clientSocket.getReceiveBufferSize()];
                             BufferedInputStream buf = new BufferedInputStream(in);
                             buf.read(arqByte);
+                            
+                            Arquivo arquivo = (Arquivo) getObjetoByte(arqByte);
+                            
+                            String dir = arquivo.getDir().endsWith("/") ? arquivo
+                            .getDir()+ arquivo.getNome() : arquivo
+                            .getDir() + "/" + arquivo.getNome();
+                            System.out.println("Escrevendo arquivo " + dir);
+
+                            //5
+                            FileOutputStream fos = new FileOutputStream(dir);
+                            fos.write(arquivo.getDado());
+                            fos.close();
+                            
                         }
                         else{
 			
@@ -97,4 +113,27 @@ class Connection extends Thread {
 		
 
 	}
+        
+        private static Object getObjetoByte(byte[] objFTP) {
+            Object obj = null;
+            ByteArrayInputStream bis = null;
+            ObjectInputStream ois = null;
+            try {
+               bis = new ByteArrayInputStream(objFTP);
+               ois = new ObjectInputStream(bis);
+               obj = ois.readObject();
+
+               bis.close();
+               ois.close();
+
+            } catch (IOException e) {
+               // TODO Auto-generated catch block
+               e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+               // TODO Auto-generated catch block
+               e.printStackTrace();           
+            }                 
+
+            return obj;
+        }
 }
